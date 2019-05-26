@@ -242,11 +242,17 @@ def extract_metadata4interferogram(fname):
 
     # Read .off and .par file
     off_files = file_dir+'/*'+date12+lks+'.off'
+<<<<<<< HEAD
     #m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
     #s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
     m_par_files = [file_dir+'/*'+m_date+'*'+i for i in PAR_EXT_LIST]
     s_par_files = [file_dir+'/*'+s_date+'*'+i for i in PAR_EXT_LIST]
     
+=======
+    m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
+    s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
+
+>>>>>>> 81262b52d7f8d0f27d94a4e7df3b5f3b7562d31a
     try:
         m_par_file = ut.get_file_list(m_par_files)[0]
     except:
@@ -262,12 +268,9 @@ def extract_metadata4interferogram(fname):
         off_file = ut.get_file_list(off_files)[0]
     except:
         off_file = file_dir+'/'+date12+lks+'.off'
-        baseCmd = 'create_offset {} {} {} {} {} {} {}'.format(m_par_file,
-                                                              s_par_file,
-                                                              off_file,
-                                                              1,1,1,0)    
-        print(baseCmd)
-        os.system(baseCmd)
+        offCmd = 'create_offset {} {} {} 1 1 1 0'.format(m_par_file, s_par_file, off_file)
+        print(offCmd)
+        os.system(offCmd)
 
     par_dict = readfile.read_gamma_par(m_par_file)
     off_dict = readfile.read_gamma_par(off_file)
@@ -372,13 +375,10 @@ def extract_metadata4geometry_geo(fname):
     ext = os.path.splitext(fname)[1]
     if ext in ['.UTM_TO_RDC']:
         par_file = os.path.splitext(fname)[0]+'.utm.dem.par'
-    else:    
-        #par_file = os.path.splitext(fname)[0]+'.utm.dem.par'
-        par_file = fname.split('.')[0] + '.utm.dem.par'
-    #par_file = os.path.splitext(fname)[0]+'.utm.dem.par'
-    print(par_file)
+    elif fnames[0].endswith('.utm.dem'):
+        par_file = fname+'.par'
     par_dict = readfile.read_gamma_par(par_file)
-   
+
     # initiate ROIPAC dict
     atr = {}
     atr['PROCESSOR'] = 'gamma'
