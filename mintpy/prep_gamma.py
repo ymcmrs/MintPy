@@ -14,7 +14,7 @@ from mintpy.utils import readfile, writefile, ptime, utils as ut
 
 
 # list of par file extension for SAR images
-PAR_EXT_LIST = ['.amp.par', '.ramp.par', '.mli.par']
+PAR_EXT_LIST = ['.amp.par', '.ramp.par', '.mli.par','rmli.par']
 
 
 ##################################################################################################
@@ -242,9 +242,10 @@ def extract_metadata4interferogram(fname):
 
     # Read .off and .par file
     off_files = file_dir+'/*'+date12+lks+'.off'
-    m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
-    s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
-
+    #m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
+    #s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
+    m_par_files = [file_dir+'/*'+m_date+'*'+i for i in PAR_EXT_LIST]
+    s_par_files = [file_dir+'/*'+s_date+'*'+i for i in PAR_EXT_LIST]
     
     try:
         m_par_file = ut.get_file_list(m_par_files)[0]
