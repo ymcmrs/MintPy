@@ -242,17 +242,17 @@ def extract_metadata4interferogram(fname):
 
     # Read .off and .par file
     off_files = file_dir+'/*'+date12+lks+'.off'
-<<<<<<< HEAD
+
     #m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
     #s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
     m_par_files = [file_dir+'/*'+m_date+'*'+i for i in PAR_EXT_LIST]
     s_par_files = [file_dir+'/*'+s_date+'*'+i for i in PAR_EXT_LIST]
     
-=======
+
     m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
     s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
 
->>>>>>> 81262b52d7f8d0f27d94a4e7df3b5f3b7562d31a
+
     try:
         m_par_file = ut.get_file_list(m_par_files)[0]
     except:
