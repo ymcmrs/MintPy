@@ -43,15 +43,14 @@ def sample_data(lat, lon, mask=None, num_sample=500):
     if num_sample > num_pixel:
         print('Number of samples > number of pixels, fix number of samples to number of pixels.')
         num_sample = num_pixel
-
     # Check input mask
     if mask is None:
         mask = np.ones((num_pixel))
 
     # Random select samples
     idx = np.arange(num_pixel)
-    idx_sample = random.sample(idx[mask.flatten() == 1.0], int(num_sample))
-
+    idx_sample = random.sample(list(idx[mask.flatten() == 1.0]), int(num_sample))
+    #idx_sample = random.sample(idx.tolist(), int(num_sample))
     lat_sample = lat[idx_sample]
     lon_sample = lon[idx_sample]
 

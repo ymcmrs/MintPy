@@ -247,8 +247,8 @@ def read_hdf5_file(fname, datasetName=None, box=None):
             ds = f[dsNamesOld[0]]
         else:
             raise ValueError('input dataset {} not found in file {}'.format(datasetName, fname))
-
-        # 2D dataset
+        
+        # 2D dataset        
         if ds.ndim == 2:
             data = ds[box[1]:box[3], box[0]:box[2]]
 
@@ -267,6 +267,10 @@ def read_hdf5_file(fname, datasetName=None, box=None):
             # read data
             data = ds[slice_flag, box[1]:box[3], box[0]:box[2]]
             data = np.squeeze(data)
+        
+        elif ds.ndim==1:
+            data = ds[:]
+        
     return data
 
 

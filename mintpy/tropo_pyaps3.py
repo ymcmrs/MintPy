@@ -203,7 +203,14 @@ def check_inputs(inps):
         print('making directory: '+inps.grib_dir)
 
     # area extent for ERA5 grib data download
-    inps.snwe = get_snwe(atr)
+    if inps.geom_file:
+        inps.snwe = get_snwe(atr)
+    else: 
+        S = floor_to_5(32)
+        W = floor_to_5(118)
+        N = ceil_to_5(35)
+        E = ceil_to_5(121)
+        inps.snwe=(S, N, W, E)
 
     # Date list to grib file list
     inps.grib_file_list = date_list2grib_file(date_list=inps.date_list,
