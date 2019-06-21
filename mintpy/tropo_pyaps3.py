@@ -166,9 +166,9 @@ def check_inputs(inps):
         mintpy_dir = os.path.join(os.path.dirname(inps.geom_file), '..')
     else:
         mintpy_dir = os.path.abspath(os.getcwd())
-
+      
     # trop_file
-    inps.trop_file = os.path.join(mintpy_dir, 'inputs/{}.h5'.format(inps.trop_model))
+    inps.trop_file = os.path.join(mintpy_dir, '{}.h5'.format(inps.trop_model))
     print('output tropospheric delay file: {}'.format(inps.trop_file))
 
     # hour
