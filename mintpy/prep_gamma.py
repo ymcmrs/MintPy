@@ -375,7 +375,7 @@ def extract_metadata4geometry_geo(fname):
     ext = os.path.splitext(fname)[1]
     if ext in ['.UTM_TO_RDC']:
         par_file = os.path.splitext(fname)[0]+'.utm.dem.par'
-    elif fnames[0].endswith('.utm.dem'):
+    elif fname[0].endswith('.utm.dem'):
         par_file = fname+'.par'
     par_dict = readfile.read_gamma_par(par_file)
 
