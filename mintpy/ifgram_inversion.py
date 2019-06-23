@@ -451,6 +451,7 @@ def estimate_timeseries(A, B, tbase_diff, ifgram, weight_sqrt=None, min_norm_vel
 
     # Initial output value
     ts = np.zeros((num_date, num_pixel), np.float32)
+    ifgram_diff = np.zeros((A.shape[0], num_pixel), np.float32)
     temp_coh = 0.
     num_inv_ifg = 0
 
@@ -462,14 +463,14 @@ def estimate_timeseries(A, B, tbase_diff, ifgram, weight_sqrt=None, min_norm_vel
 
         # Skip the pixel if its redundancy < threshold
         if np.min(np.sum(A != 0., axis=0)) < min_redundancy:
-            return ts, temp_coh, num_inv_ifg
+            return ts, temp_coh, num_inv_ifg, ifgram_diff
 
         # check matrix invertability
         if weight_sqrt is not None:  #for WLS only because OLS contains it already
             try:
                 linalg.inv(np.dot(B.T, B))
             except linalg.LinAlgError:
-                return ts, temp_coh, num_inv_ifg
+                return ts, temp_coh, num_inv_ifg, ifgram_diff
 
         ifgram = ifgram[idx, :]
         if weight_sqrt is not None:
@@ -508,11 +509,11 @@ def estimate_timeseries(A, B, tbase_diff, ifgram, weight_sqrt=None, min_norm_vel
     except linalg.LinAlgError:
         pass
 
-    return ts, temp_coh, num_inv_ifg
+    return ts, temp_coh, num_inv_ifg, ifgram_diff
 
 
 ###########################################################################################
-def write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ts_std=None, num_inv_ifg=None,
+def write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ifgram_diff, ts_std=None, num_inv_ifg=None,
                     suffix='', inps=None):
     stack_obj = ifgramStack(ifgram_file)
     stack_obj.open(print_msg=False)
@@ -542,6 +543,17 @@ def write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ts_std=None, num_inv_if
     print('-'*50)
     writefile.write(temp_coh, out_file=out_file, metadata=metadata)
 
+    # File - IfgInversionRes.h5
+    out_file = 'IfgInvRes.h5'
+    #metadata['FILE_TYPE'] = 'unwrapPhase'
+    #metadata['UNIT'] = 'radian'
+    
+    date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    dsDict = {}
+    dsDict['unwrapPhase'] = ifgram_diff
+    writefile.write(dsDict, out_file=out_file, ref_file=ifgram_file) 
+        
+        
     # File 3 - timeseriesDecorStd.h5
     if not np.all(ts_std == 0.):
         out_file = 'timeseriesDecorStd{}.h5'.format(suffix)
@@ -835,7 +847,7 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
     # Design matrix
     date12_list = stack_obj.get_date12_list(dropIfgram=True)
     A, B = stack_obj.get_design_matrix4timeseries(date12_list=date12_list)[0:2]
-
+    num_ifg = A.shape[0]
     # prep for decor std time-series
     try:
         ref_date = str(np.loadtxt('reference_date.txt', dtype=bytes).astype(str))
@@ -848,6 +860,7 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
 
     # Initialization of output matrix
     ts     = np.zeros((num_date, num_pixel), np.float32)
+    ifgram_diff = np.zeros((num_ifg, num_pixel), np.float32)
     ts_std = np.zeros((num_date, num_pixel), np.float32)
     temp_coh    = np.zeros(num_pixel, np.float32)
     num_inv_ifg = np.zeros(num_pixel, np.int16)
@@ -913,11 +926,12 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
         if np.sum(mask_all_net) > 0:
             print(('inverting pixels with valid phase in all  ifgrams'
                    ' ({:.0f} pixels) ...').format(np.sum(mask_all_net)))
-            tsi, tcohi, num_ifgi = estimate_timeseries(A, B, tbase_diff,
+            tsi, tcohi, num_ifgi, ifgram_res = estimate_timeseries(A, B, tbase_diff,
                                                        ifgram=pha_data[:, mask_all_net],
                                                        weight_sqrt=None,
                                                        min_norm_velocity=min_norm_velocity,
                                                        min_redundancy=min_redundancy)
+            ifgram_diff[:, mask_all_net] = ifgram_res
             ts[:, mask_all_net] = tsi
             temp_coh[mask_all_net] = tcohi
             num_inv_ifg[mask_all_net] = num_ifgi
@@ -930,12 +944,13 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
             prog_bar = ptime.progressBar(maxValue=num_pixel2inv)
             for i in range(num_pixel2inv):
                 idx = idx_pixel2inv[i]
-                tsi, tcohi, num_ifgi = estimate_timeseries(A, B, tbase_diff,
+                tsi, tcohi, num_ifgi, ifgram_res = estimate_timeseries(A, B, tbase_diff,
                                                            ifgram=pha_data[:, idx],
                                                            weight_sqrt=None,
                                                            min_norm_velocity=min_norm_velocity,
                                                            min_redundancy=min_redundancy)
                 ts[:, idx] = tsi.flatten()
+               
                 temp_coh[idx] = tcohi
                 num_inv_ifg[idx] = num_ifgi
                 prog_bar.update(i+1, every=2000, suffix='{}/{} pixels'.format(i+1, num_pixel2inv))
@@ -966,9 +981,11 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
 
     ts = ts.reshape(num_date, num_row, num_col)
     ts_std = ts_std.reshape(num_date, num_row, num_col)
+    ifgram_diff = ifgram_diff.reshape(num_ifg, num_row, num_col)
+    
     temp_coh = temp_coh.reshape(num_row, num_col)
     num_inv_ifg = num_inv_ifg.reshape(num_row, num_col)
-
+    
     # write output files if input file is splitted (box == None)
     if box is None:
         # metadata
@@ -978,7 +995,7 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
         write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ts_std, num_inv_ifg, suffix, inps=inps)
         return
     else:
-        return ts, temp_coh, ts_std, num_inv_ifg
+        return ts, temp_coh, ts_std, num_inv_ifg, ifgram_diff
 
 
 def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
@@ -1074,6 +1091,7 @@ def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
         stack_obj.open(print_msg=False)
         ts     = np.zeros((num_date, length, width), np.float32)
         ts_std = np.zeros((num_date, length, width), np.float32)
+        ifgram_diff = np.zeros((num_ifgram, length, width), np.float32)
         temp_coh    = np.zeros((length, width), np.float32)
         num_inv_ifg = np.zeros((length, width), np.int16)
 
@@ -1086,7 +1104,8 @@ def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
                 (tsi,
                  temp_cohi,
                  ts_stdi,
-                 ifg_numi) = ifgram_inversion_patch(ifgram_file,
+                 ifg_numi,
+                 ifg_res) = ifgram_inversion_patch(ifgram_file,
                                                     box=box,
                                                     ref_phase=ref_phase,
                                                     unwDatasetName=inps.unwDatasetName,
@@ -1099,9 +1118,11 @@ def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
 
                 ts[:, box[1]:box[3], box[0]:box[2]] = tsi
                 ts_std[:, box[1]:box[3], box[0]:box[2]] = ts_stdi
+                ifgram_diff[:,box[1]:box[3], box[0]:box[2]] = ifg_res
+                
                 temp_coh[box[1]:box[3], box[0]:box[2]] = temp_cohi
                 num_inv_ifg[box[1]:box[3], box[0]:box[2]] = ifg_numi
-
+                
         # Parallel loop
         else:
             try:
@@ -1167,10 +1188,12 @@ def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
                 i_future += 1
                 print("FUTURE #" + str(i_future), "complete in", time.time() - start_time_subboxes,
                       "seconds. Box:", subbox, "Time:", time.time())
-                tsi, temp_cohi, ts_stdi, ifg_numi, subbox = result
+                tsi, temp_cohi, ts_stdi, ifg_numi, ifg_res,subbox = result
 
                 ts[:, subbox[1]:subbox[3], subbox[0]:subbox[2]] = tsi
                 ts_std[:, subbox[1]:subbox[3], subbox[0]:subbox[2]] = ts_stdi
+                ifgram_diff[:, subbox[1]:subbox[3], subbox[0]:subbox[2]] = ifg_res
+                
                 temp_coh[subbox[1]:subbox[3], subbox[0]:subbox[2]] = temp_cohi
                 num_inv_ifg[subbox[1]:subbox[3], subbox[0]:subbox[2]] = ifg_numi
 
@@ -1188,7 +1211,7 @@ def ifgram_inversion(ifgram_file='ifgramStack.h5', inps=None):
         metadata = dict(stack_obj.metadata)
         for key in configKeys:
             metadata[key_prefix+key] = str(vars(inps)[key])
-        write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ts_std, num_inv_ifg, suffix='', inps=inps)
+        write2hdf5_file(ifgram_file, metadata, ts, temp_coh, ifgram_diff, ts_std, num_inv_ifg, suffix='', inps=inps)
 
     m, s = divmod(time.time()-start_time, 60)
     print('time used: {:02.0f} mins {:02.1f} secs.\n'.format(m, s))
@@ -1212,7 +1235,8 @@ def parallel_ifgram_inversion_patch(data):
     (tsi,
      temp_cohi,
      ts_stdi,
-     ifg_numi) = ifgram_inversion_patch(ifgram_file,
+     ifg_numi,
+     ifg_res) = ifgram_inversion_patch(ifgram_file,
                                         box= box,
                                         ref_phase= ref_phase,
                                         unwDatasetName=unwDatasetName,
@@ -1223,7 +1247,7 @@ def parallel_ifgram_inversion_patch(data):
                                         min_redundancy=min_redundancy,
                                         water_mask_file=water_mask_file)
 
-    return tsi, temp_cohi, ts_stdi, ifg_numi, box
+    return tsi, temp_cohi, ts_stdi, ifg_numi, ifg_res, box
 
 
 ################################################################################################
