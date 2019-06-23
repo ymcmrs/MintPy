@@ -245,8 +245,9 @@ def main(argv):
     
     C = ifgramStack.get_design_matrix4triplet(date12_list)
     print(C)
-    num_triang, num_ifg = C.shape
-    CC =np.zeros((num_triang+len(good_pair),num_ifg))
+    num_triang, num_ifgram = C.shape
+    print(num_triang, num_ifgram)
+    CC =np.zeros((num_triang+len(good_pair),num_ifgram))
     CC[0:num_triang,:] = C
     LL =np.zeros((num_triang+len(good_pair),))
     
@@ -264,10 +265,10 @@ def main(argv):
     print(pp)
     print(kk_est)
     
-    #print(good_pair)
-    #print(bad_pair)
-    #print(Res)
-    #print(Ifg)
+    print(good_pair)
+    print(bad_pair)
+    print(Res)
+    print(Ifg)
     
     
     
