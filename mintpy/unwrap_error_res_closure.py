@@ -226,7 +226,7 @@ def main(argv):
     invRes = inps.inversion_res
     mask_file = inps.mask_file
     mask = readfile.read(mask_file, datasetName='mask')[0]
-    
+    meta = readfile.read_attribute(ifgram, datasetName=dset0.split('-')[0]) 
     if inps.out_file:
         OUT = inps.out_file
     else:
@@ -307,7 +307,7 @@ def main(argv):
     datasetDict['good_pair'] = good_pair
     datasetDict['bad_pair'] = bad_pair
     OUT = 'unwarp_err_parameter.h5'
-    write_variogram_h5(datasetDict, OUT, metadata=None, ref_file=None, compression=None)
+    write_variogram_h5(datasetDict, OUT, metadata=mate, ref_file=None, compression=None)
     sys.exit(1)
 
 
