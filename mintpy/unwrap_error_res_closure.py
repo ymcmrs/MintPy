@@ -169,7 +169,7 @@ def main(argv):
     if inps.out_file:
         OUT = inps.out_file
     else:
-        OUT = ifgramStackCor.h5
+        OUT = 'ifgramStackCor.h5'
 
     sliceList = readfile.get_slice_list(FILE)
     print(sliceList)
