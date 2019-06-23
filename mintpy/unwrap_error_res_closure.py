@@ -193,7 +193,7 @@ def main(argv):
         dset = g_list[i]
         ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
         res0 = readfile.read(invRes, datasetName=dset)[0]
-        rr = mean(res0[mask==1])
+        rr = np.mean(res0[mask==1])
         Res.append(np.mean(res0[mask==1]))
         Ifg.append(np.mean(ifgram0[mask==1]))
         if rr<0.1:
@@ -205,6 +205,8 @@ def main(argv):
     print(bad_pair)
     print(Res)
     print(Ifg)
+    
+    
     
     sys.exit(1)
 
