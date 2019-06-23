@@ -13,6 +13,7 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+from scipy import linalg   # more effieint than numpy.linalg
 
 try:
     from cvxopt import matrix
@@ -116,6 +117,39 @@ def write_hdf5_file_patch(ifgram_file, data, box=None, dsName='unwrapPhase_phase
     print('close {}'.format(ifgram_file))
     return ifgram_file
 
+
+def print_progress(iteration, total, prefix='calculating:', suffix='complete', decimals=1, barLength=50, elapsed_time=None):
+    """Print iterations progress - Greenstick from Stack Overflow
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : number of decimals in percent complete (Int) 
+        barLength   - Optional  : character length of bar (Int) 
+        elapsed_time- Optional  : elapsed time in seconds (Int/Float)
+    
+    Reference: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    """
+    filledLength    = int(round(barLength * iteration / float(total)))
+    percents        = round(100.00 * (iteration / float(total)), decimals)
+    bar             = '#' * filledLength + '-' * (barLength - filledLength)
+    if elapsed_time:
+        sys.stdout.write('%s [%s] %s%s    %s    %s secs\r' % (prefix, bar, percents, '%', suffix, int(elapsed_time)))
+    else:
+        sys.stdout.write('%s [%s] %s%s    %s\r' % (prefix, bar, percents, '%', suffix))
+    sys.stdout.flush()
+    if iteration == total:
+        print("\n")
+
+    '''
+    Sample Useage:
+    for i in range(len(dateList)):
+        print_progress(i+1,len(dateList))
+    '''
+    return
+
 ##########################################################################################
 INTRODUCTION = '''
 #############################################################################
@@ -190,6 +224,7 @@ def main(argv):
     Ifg = [] 
     
     for i in range(N_list):
+        print_progress(i+1, N_list, prefix='Data: ', suffix=g_list[i])
         dset = g_list[i]
         ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
         res0 = readfile.read(invRes, datasetName=dset)[0]
@@ -200,11 +235,37 @@ def main(argv):
             good_pair.append(i)
         else:
             bad_pair.append(i)
-        
-    print(good_pair)
-    print(bad_pair)
-    print(Res)
-    print(Ifg)
+    
+    stack_obj = ifgramStack(ifgram)
+    stack_obj.open()
+    date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    num_ifgram = len(date12_list)
+    date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    num_ifgram = len(date12_list)
+    
+    C = matrix(ifgramStack.get_design_matrix4triplet(date12_list).astype(float))
+    num_triang, num_ifg = C.shape
+    CC =np.zeros((num_triang+len(good_pair),num_ifg))
+    CC[0:num_triang,:] = C
+    LL =np.zeros((num_triang+len(good_pair),))
+    
+    for i in range(len(good_pair)):
+        CC[num_triang+i,good_pair[i]] =1
+        LL[num_triang+i] = Ifg[good_pair[i]]
+    
+    
+    Ifg_est = linalg.lstsq(CC, LL, cond=rcond)[0]
+    
+    print(Ifg_est)
+    pp = Ifg_est - Ifg
+    kk_est = np.round(pp/(2*np.pi))
+    print(pp)
+    print(kk_est)
+    
+    #print(good_pair)
+    #print(bad_pair)
+    #print(Res)
+    #print(Ifg)
     
     
     
