@@ -243,7 +243,7 @@ def main(argv):
     date12_list = stack_obj.get_date12_list(dropIfgram=True)
     num_ifgram = len(date12_list)
     
-    C = matrix(ifgramStack.get_design_matrix4triplet(date12_list).astype(float))
+    C = ifgramStack.get_design_matrix4triplet(date12_list)
     print(C)
     num_triang, num_ifg = C.shape
     #CC =np.zeros((num_triang+len(good_pair),num_ifg))
