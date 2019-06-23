@@ -213,7 +213,7 @@ def main(argv):
     for i in range(N_list):
         if 'unwrapPhase' in sliceList[i]:
             g_list.append(sliceList[i])
-    print(g_list)
+    #print(g_list)
     
     N_list = len(g_list)
     
@@ -236,12 +236,12 @@ def main(argv):
     #    else:
     #        bad_pair.append(i)
     
-    #stack_obj = ifgramStack(ifgram)
-    #stack_obj.open()
-    #date12_list = stack_obj.get_date12_list(dropIfgram=True)
-    #num_ifgram = len(date12_list)
-    #date12_list = stack_obj.get_date12_list(dropIfgram=True)
-    #num_ifgram = len(date12_list)
+    stack_obj = ifgramStack(ifgram)
+    stack_obj.open()
+    date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    num_ifgram = len(date12_list)
+    date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    num_ifgram = len(date12_list)
     
     C = matrix(ifgramStack.get_design_matrix4triplet(date12_list).astype(float))
     print(C)
