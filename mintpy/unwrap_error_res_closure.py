@@ -307,7 +307,7 @@ def main(argv):
     datasetDict['good_pair'] = good_pair
     datasetDict['bad_pair'] = bad_pair
     OUT = 'unwarp_err_parameter.h5'
-    write_variogram_h5(datasetDict, OUT, metadata=mate, ref_file=None, compression=None)
+    write_variogram_h5(datasetDict, OUT, metadata=meta, ref_file=None, compression=None)
     sys.exit(1)
 
 
