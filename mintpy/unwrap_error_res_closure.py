@@ -194,8 +194,8 @@ def main(argv):
         ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
         res0 = readfile.read(invRes, datasetName=dset)[0]
         rr = mean(res0[mask==1])
-        Res.append(mean(res0[mask==1]))
-        Ifg.append(mean(ifgram0[mask==1]))
+        Res.append(np.mean(res0[mask==1]))
+        Ifg.append(np.mean(ifgram0[mask==1]))
         if rr<0.1:
             good_pair.append(i)
         else:
