@@ -226,7 +226,7 @@ def main(argv):
     invRes = inps.inversion_res
     mask_file = inps.mask_file
     mask = readfile.read(mask_file, datasetName='mask')[0]
-    meta = readfile.read_attribute(ifgram, datasetName=dset0.split('-')[0]) 
+    meta = readfile.read_attribute(ifgram, datasetName=None) 
     if inps.out_file:
         OUT = inps.out_file
     else:
