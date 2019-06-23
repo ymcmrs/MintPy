@@ -164,7 +164,8 @@ def main(argv):
     inps = cmdLineParse() 
     ifgram = inps.ifgram_file
     invRes = inps.inversion_res
-    mask = inps.mask_file
+    mask_file = inps.mask_file
+    mask = readfile.read(mask_file, datasetName='mask')[0]
     
     if inps.out_file:
         OUT = inps.out_file
@@ -178,8 +179,32 @@ def main(argv):
     for i in range(N_list):
         if 'unwrapPhase' in sliceList[i]:
             g_list.append(sliceList[i])
-        
+    print(g_list)
     
+    N_list = len(g_list)
+    
+    good_pair = []
+    bad_pair = []
+    
+    Res = []
+    Ifg = [] 
+    
+    for i in range(N):
+        dset = g_list[i]
+        ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
+        res0 = readfile.read(invRes, datasetName=dset)[0]
+        rr = mean(res0[mask==1])
+        Res.append(mean(res0[mask==1]))
+        Ifg.append(mean(ifgram0[mask==1]))
+        if rr<0.1:
+            good_pair.append(i)
+        else:
+            bad_pair.append(i)
+        
+    print(good_pair)
+    print(bad_pair)
+    print(Res)
+    print(Ifg)
     
     sys.exit(1)
 
