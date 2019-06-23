@@ -223,44 +223,45 @@ def main(argv):
     Res = []
     Ifg = [] 
     
-    for i in range(N_list):
-        print_progress(i+1, N_list, prefix='Data: ', suffix=g_list[i])
-        dset = g_list[i]
-        ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
-        res0 = readfile.read(invRes, datasetName=dset)[0]
-        rr = np.mean(res0[mask==1])
-        Res.append(np.mean(res0[mask==1]))
-        Ifg.append(np.mean(ifgram0[mask==1]))
-        if rr<0.1:
-            good_pair.append(i)
-        else:
-            bad_pair.append(i)
+    #for i in range(N_list):
+    #    print_progress(i+1, N_list, prefix='Data: ', suffix=g_list[i])
+    #    dset = g_list[i]
+    #    ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
+    #    res0 = readfile.read(invRes, datasetName=dset)[0]
+    #    rr = np.mean(res0[mask==1])
+    #    Res.append(np.mean(res0[mask==1]))
+    #    Ifg.append(np.mean(ifgram0[mask==1]))
+    #    if rr<0.1:
+    #        good_pair.append(i)
+    #    else:
+    #        bad_pair.append(i)
     
-    stack_obj = ifgramStack(ifgram)
-    stack_obj.open()
-    date12_list = stack_obj.get_date12_list(dropIfgram=True)
-    num_ifgram = len(date12_list)
-    date12_list = stack_obj.get_date12_list(dropIfgram=True)
-    num_ifgram = len(date12_list)
+    #stack_obj = ifgramStack(ifgram)
+    #stack_obj.open()
+    #date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    #num_ifgram = len(date12_list)
+    #date12_list = stack_obj.get_date12_list(dropIfgram=True)
+    #num_ifgram = len(date12_list)
     
     C = matrix(ifgramStack.get_design_matrix4triplet(date12_list).astype(float))
+    print(C)
     num_triang, num_ifg = C.shape
-    CC =np.zeros((num_triang+len(good_pair),num_ifg))
-    CC[0:num_triang,:] = C
-    LL =np.zeros((num_triang+len(good_pair),))
+    #CC =np.zeros((num_triang+len(good_pair),num_ifg))
+    #CC[0:num_triang,:] = C
+    #LL =np.zeros((num_triang+len(good_pair),))
     
-    for i in range(len(good_pair)):
-        CC[num_triang+i,good_pair[i]] =1
-        LL[num_triang+i] = Ifg[good_pair[i]]
+    #for i in range(len(good_pair)):
+    #    CC[num_triang+i,good_pair[i]] =1
+    #    LL[num_triang+i] = Ifg[good_pair[i]]
     
     
-    Ifg_est = linalg.lstsq(CC, LL, cond=rcond)[0]
+    #Ifg_est = linalg.lstsq(CC, LL, cond=rcond)[0]
     
-    print(Ifg_est)
-    pp = Ifg_est - Ifg
-    kk_est = np.round(pp/(2*np.pi))
-    print(pp)
-    print(kk_est)
+    #print(Ifg_est)
+    #pp = Ifg_est - Ifg
+    #kk_est = np.round(pp/(2*np.pi))
+    #print(pp)
+    #print(kk_est)
     
     #print(good_pair)
     #print(bad_pair)
