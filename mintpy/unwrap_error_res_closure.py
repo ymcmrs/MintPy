@@ -255,6 +255,7 @@ def main(argv):
         CC[num_triang+i,good_pair[i]] =1
         LL[num_triang+i] = Ifg[good_pair[i]]
     
+    print(CC)
     rcond=1e-5
     print(np.rank(CC))
     Ifg_est = linalg.lstsq(CC, LL, cond=rcond)[0]
@@ -274,6 +275,15 @@ def main(argv):
     
     print([aa,bb])
     
+    datasetDict = dict()
+    datasetDict['Ifg_est'] = Ifg_est
+    datasetDict['Ifg'] = Ifg
+    datasetDict['Res'] = Res
+    datasetDict['C'] = CC
+    datasetDict['good_pair'] = good_pair
+    datasetDict['bad_pair'] = bad_pair
+    OUT = 'unwarp_err_parameter.h5'
+    write_variogram_h5(datasetDict, OUT, metadata=None, ref_file=None, compression=None)
     sys.exit(1)
 
 
