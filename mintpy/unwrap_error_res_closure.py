@@ -189,7 +189,7 @@ def main(argv):
     Res = []
     Ifg = [] 
     
-    for i in range(N):
+    for i in range(N_list):
         dset = g_list[i]
         ifgram0 = readfile.read(ifgram, datasetName=dset)[0]
         res0 = readfile.read(invRes, datasetName=dset)[0]
