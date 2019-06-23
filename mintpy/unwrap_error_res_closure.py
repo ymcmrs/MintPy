@@ -262,8 +262,8 @@ def main(argv):
     
     print(Ifg_est)
     pp = Ifg_est - Ifg
-    aa = Ifg_est[good_pair[:]];aa = aa.reshape(len(good_pair),)
-    bb = Ifg[good_pair[:]];bb = bb.reshape(len(good_pair),)
+    #aa = Ifg_est[good_pair[:]];aa = aa.reshape(len(good_pair),)
+    #bb = Ifg[good_pair[:]];bb = bb.reshape(len(good_pair),)
     kk_est = np.round(pp/(2*np.pi))
     print(pp)
     print(kk_est)
@@ -272,9 +272,7 @@ def main(argv):
     print(bad_pair)
     print(Res)
     print(Ifg)
-    
-    print([aa,bb])
-    
+   
     datasetDict = dict()
     datasetDict['Ifg_est'] = Ifg_est
     datasetDict['Ifg'] = Ifg
