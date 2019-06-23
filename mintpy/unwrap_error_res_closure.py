@@ -254,7 +254,8 @@ def main(argv):
         CC[num_triang+i,good_pair[i]] =1
         LL[num_triang+i] = Ifg[good_pair[i]]
     
-    
+    rcond=1e-5
+    print(np.rank(CC))
     Ifg_est = linalg.lstsq(CC, LL, cond=rcond)[0]
     
     print(Ifg_est)
