@@ -115,9 +115,17 @@ def write_hdf5_file_patch(ifgram_file, data, box=None, dsName='unwrapPhase_phase
     return ifgram_file
 
 ##########################################################################################
-EXAMPLE = 
+INTRODUCTION = '''
+#############################################################################
+   Copy Right(c): 2019, Yunmeng Cao   This script is part of mintPy software.
+   
+   Correcting the unwrap error for an indendent island or land.
+'''
 
-"""Example:
+
+EXAMPLE = """
+    
+    Example:
      
       unwrap_error_res_closure.py  ifgramStack.h5  IfgInvRes.h5  maskResRegion.h5  
       unwrap_error_res_closure.py  ifgramStack.h5  IfgInvRes.h5  maskResRegion.h5  -o ifgramStackCor.h5
