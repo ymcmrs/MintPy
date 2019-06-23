@@ -171,7 +171,7 @@ def main(argv):
     else:
         OUT = 'ifgramStackCor.h5'
 
-    sliceList = readfile.get_slice_list(FILE)
+    sliceList = readfile.get_slice_list(ifgram)
     print(sliceList)
     
         
