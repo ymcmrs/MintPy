@@ -172,9 +172,15 @@ def main(argv):
         OUT = 'ifgramStackCor.h5'
 
     sliceList = readfile.get_slice_list(ifgram)
-    print(sliceList)
-    
+    N_list =len(sliceList)
         
+    g_list = []
+    for i in range(N_list):
+        if 'unwrapPhase' in sliceList[i]:
+            g_list.append(sliceList[i])
+        
+    
+    
     sys.exit(1)
 
 
