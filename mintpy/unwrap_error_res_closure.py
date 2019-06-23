@@ -30,6 +30,32 @@ from mintpy.utils import ptime, readfile, utils as ut, plot as pp
 from mintpy.utils.solvers import l1regls
 from mintpy import ifgram_inversion as ifginv
 
+def write_variogram_h5(datasetDict, out_file, metadata=None, ref_file=None, compression=None):
+    #output = 'variogramStack.h5'
+    'lags                  1 x N '
+    'semivariance          M x N '
+    'sills                 M x 1 '
+    'ranges                M x 1 '
+    'nuggets               M x 1 '
+    
+    if os.path.isfile(out_file):
+        print('delete exsited file: {}'.format(out_file))
+        os.remove(out_file)
+
+    print('create HDF5 file: {} with w mode'.format(out_file))
+    with h5py.File(out_file, 'w') as f:
+        for dsName in datasetDict.keys():
+            data = datasetDict[dsName]
+            ds = f.create_dataset(dsName,
+                              data=data,
+                              compression=compression)
+        
+        for key, value in metadata.items():
+            f.attrs[key] = str(value)
+            #print(key + ': ' +  value)
+    print('finished writing to {}'.format(out_file))
+        
+    return out_file 
 
 def read_template2inps(template_file, inps=None):
     """Read input template options into Namespace inps"""
