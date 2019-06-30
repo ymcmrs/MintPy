@@ -126,6 +126,10 @@ def mask_file(fname, mask_file, out_file, inps=None):
             print('masking {d:<{w}} from {f} ...'.format(d=dsName, w=maxDigit, f=fname))
             data = readfile.read(fname, datasetName=dsName, print_msg=False)[0]
             data = mask_matrix(data, mask, fill_value=inps.fill_value)
+        else:
+            data = readfile.read(fname, datasetName=dsName, print_msg=False)[0]
+            data = mask_matrix(data, mask, fill_value=0)
+        
         dsDict[dsName] = data
 
     # default output filename
