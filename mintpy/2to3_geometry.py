@@ -110,10 +110,10 @@ def run_2to3_geometryRadar(py2_file, py3_file):
         dem_data = f['dem/dem'][:]    
     with h5py.File(inc_file, 'r') as f:
         inc_data = np.zeros((length, width), np.float32)
-        inc_data = f['mask/mask'][:]      
+        inc_data = f['mask'][:]      
     with h5py.File(range_file, 'r') as f:
         range_data = np.zeros((length, width), np.float32)
-        range_data = f['mask/mask'][:]  
+        range_data = f['mask'][:]  
         
     datasetDict = dict()
     datasetDict['height'] = np.asarray(dem_data,dtype='float32')
