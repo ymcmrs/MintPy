@@ -2,7 +2,7 @@
 ############################################################
 # Program is part of MintPy                                #
 # Copyright(c) 2013-2019, Zhang Yunjun, Heresh Fattahi     #
-# Author:  Zhang Yunjun, Heresh Fattahi                    #
+# Author:  Zhang Yunjun, Heresh Fattahi, Yunmeng Cao       #
 ############################################################
 
 
@@ -11,6 +11,8 @@ import numpy as np
 from mintpy.objects import ifgramStack
 from mintpy.utils import readfile, writefile
 
+# Modify 2019-07-09 By Yunmeng Cao
+# reference reconstruct consider the dropifgrams in the original ifgram_file
 
 #####################################################################################
 EXAMPLE = """example:
@@ -49,19 +51,34 @@ def timeseries2ifgram(ts_file, ifgram_file, out_file='reconUnwrapIfgram.h5'):
     # reconstruct unwrapPhase
     print('reconstructing the interferograms from timeseries')
     stack_obj = ifgramStack(ifgram_file)
-    stack_obj.open(print_msg=False)
-    A1 = stack_obj.get_design_matrix4timeseries(stack_obj.get_date12_list(dropIfgram=False))[0]
+    stack_obj.open(print_msg=False)  
+    date12 = readfile.read(ifgram_file, datasetName='date')[0]
+    bperp = readfile.read(ifgram_file, datasetName='bperp')[0]
+    droplist = readfile.read(ifgram_file, datasetName='dropIfgram')[0]
+    date = stack_obj.get_date_list(dropIfgram=True)
+    date = np.asarray(date,dtype='|S8')
+    print(date)
+    meta = readfile.read_attribute(ifgram_file,datasetName=None)
+    
+    #A1 = stack_obj.get_design_matrix4timeseries(stack_obj.get_date12_list(dropIfgram=False))[0]
+    A1 = stack_obj.get_design_matrix4timeseries(stack_obj.get_date12_list(dropIfgram=True))[0]
     num_ifgram = A1.shape[0]
     A0 = -1.*np.ones((num_ifgram, 1))
     A = np.hstack((A0, A1))
     ifgram_est = np.dot(A, ts_data).reshape(num_ifgram, length, width)
     ifgram_est = np.array(ifgram_est, dtype=ts_data.dtype)
     del ts_data
-
+    
+    
     # write to ifgram file
     dsDict = {}
     dsDict['unwrapPhase'] = ifgram_est
-    writefile.write(dsDict, out_file=out_file, ref_file=ifgram_file)
+    dsDict['date'] = date12[droplist]
+    dsDict['date_list'] = date
+    dsDict['bperp'] = bperp[droplist]
+    dsDict['dropIfgram'] = droplist[droplist]
+    
+    writefile.write(dsDict, out_file=out_file, metadata=meta)
     return ifgram_file
 
 
