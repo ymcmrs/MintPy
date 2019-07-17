@@ -62,7 +62,7 @@ def cmdLineParse():
 
     parser.add_argument('input_file',help='input file, [ifgramStack.h5 or timeseries.h5]')
     parser.add_argument('--step',dest='step', metavar='NUM', type=int, default=1, help='steps to select the datelist')
-    parser.add_argument('--exclude', dest='exclude_date', action='store_false',help='exclude the selected date')
+    parser.add_argument('--exclude', dest='exclude_date', action = 'store_true', help='exclude the selected date')
     parser.add_argument('-o','--out_file', dest='out_file', metavar='FILE',help='name of the output file')
    
     inps = parser.parse_args()
@@ -93,17 +93,20 @@ def main(argv):
     elif 'timeseries' in input_file:
         tsobj = timeseries(input_file)
         date_list = tsobj.get_date_list()
-    
+        #print(date_list)    
     #print(date_list)
     N = len(date_list)
     kk = np.arange(0,N,1)
     k0 = np.arange(0,N,Step)
     k1 = k0
-  
+    #print(k1)
+    #print(len(k1))
+
     if inps.exclude_date:
         k1 = [i for i in kk if i not in k0]
          
     for i in range(len(k1)):
+        #print(i)
         date0 = date_list[k1[i]]
         call_str ='echo ' + date0 + ' >> ' + OUT
         #print(call_str)
