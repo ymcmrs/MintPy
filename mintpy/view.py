@@ -14,6 +14,7 @@ import argparse
 from datetime import datetime as dt
 import numpy as np
 #import matplotlib; matplotlib.use("TkAgg")
+#import matplotlib; matplotlib.use("macosx")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
