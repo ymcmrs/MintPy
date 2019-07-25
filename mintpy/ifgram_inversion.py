@@ -501,10 +501,12 @@ def estimate_timeseries(A, B, tbase_diff, ifgram, weight_sqrt=None, min_norm_vel
                 X = linalg.lstsq(A, ifgram, cond=rcond)[0]
             ts[1: ,:] = X
             ifgram_diff = ifgram - np.dot(A, X)
-
+       
+        ifgram_diff_ratio = ifgram_diff/ifgram
         # calculate temporal coherence
         num_inv_ifg = A.shape[0]
         temp_coh = np.abs(np.sum(np.exp(1j*ifgram_diff), axis=0)) / num_inv_ifg
+        #temp_coh = np.abs(np.sum(np.exp(1j*ifgram_diff_ratio), axis=0)) / num_inv_ifg
 
     except linalg.LinAlgError:
         pass
