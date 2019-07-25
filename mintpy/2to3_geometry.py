@@ -16,7 +16,7 @@ import os
 ################################################################################
 EXAMPLE = """example:
   2to3_geometry.py  demRadar.h5 -o geometryRadar.h5    [incidence_angle.h5 and range_distance.h5 should be available]
-  2to3_geometry.py  demGeo.h5 -o geomeGeo.h5      [geo2rdc.h5 should be available]
+  2to3_geometry.py  demGeo.h5 -o geometryGeo.h5      [geo2rdc.h5 should be available]
 """
 
 
