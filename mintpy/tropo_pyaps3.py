@@ -470,7 +470,25 @@ def get_lat_lon(meta):
     """Get 2D array of lat and lon from metadata"""
     length, width = int(meta['LENGTH']), int(meta['WIDTH'])
     lat0, lat1, lon0, lon1 = get_bounding_box(meta)
-    lat, lon = np.mgrid[lat0:lat1:length*1j, lon0:lon1:width*1j]
+    if 'Y_FIRST' in meta.keys():
+        lat, lon = np.mgrid[lat0:lat1:length*1j, lon0:lon1:width*1j]
+    else:
+        lat, lon = get_lat_lon_rdc(meta)
+    return lat, lon
+
+def get_lat_lon_rdc(meta):
+    """Get 2D array of lat and lon from metadata"""
+    length, width = int(meta['LENGTH']), int(meta['WIDTH'])
+    lats = [float(meta['LAT_REF{}'.format(i)]) for i in [1,2,3,4]]
+    lons = [float(meta['LON_REF{}'.format(i)]) for i in [1,2,3,4]]
+    
+    lat = np.zeros((length,width),dtype = np.float32)
+    lon = np.zeros((length,width),dtype = np.float32)
+    
+    for i in range(length):
+        for j in range(width):
+            lat[i,j] = lats[0] + j*(lats[1] - lats[0])/width + i*(lats[2] - lats[0])/length
+            lon[i,j] = lons[0] + j*(lons[1] - lons[0])/width + i*(lons[2] - lons[0])/length
     return lat, lon
 
 
