@@ -435,10 +435,42 @@ def get_delay(grib_file, inps):
     # estimate delay
     phs = np.zeros((aps_obj.ny, aps_obj.nx), dtype=np.float32)
     aps_obj.getdelay(phs)
-
+    phs_abs = phs.copy()
     # Get relative phase delay in space
     phs -= phs[inps.ref_yx[0], inps.ref_yx[1]]
     phs *= -1    # reverse the sign for consistency between different phase correction steps/methods
+    return phs
+
+def get_delay_abs(grib_file, inps):
+    """Get delay matrix using PyAPS for one acquisition
+    Inputs:
+        grib_file - strng, grib file path
+        atr       - dict, including the following attributes:
+                    dem_file    - string, DEM file path
+                    trop_model - string, Weather re-analysis data source
+                    delay_type  - string, comb/dry/wet
+                    ref_y/x     - string, reference pixel row/col number
+                    inc_angle   - np.array, 0/1/2 D
+    Output:
+        phs - 2D np.array, absolute tropospheric phase delay relative to ref_y/x
+    """
+    # initiate pyaps object
+    aps_obj = pa.PyAPS(grib_file,
+                       grib=inps.trop_model,
+                       Del=inps.delay_type,
+                       dem=inps.dem,
+                       inc=inps.inc,
+                       lat=inps.lat,
+                       lon=inps.lon,
+                       verb=verbose)
+
+    # estimate delay
+    phs = np.zeros((aps_obj.ny, aps_obj.nx), dtype=np.float32)
+    aps_obj.getdelay(phs)
+
+    # Get relative phase delay in space
+    #phs -= phs[inps.ref_yx[0], inps.ref_yx[1]]
+    #phs *= -1    # reverse the sign for consistency between different phase correction steps/methods
     return phs
 
 def get_bounding_box(meta):
@@ -531,7 +563,8 @@ def get_delay_timeseries(inps, atr):
     num_date = len(inps.grib_file_list)
     date_list = [str(re.findall('\d{8}', i)[0]) for i in inps.grib_file_list]
     trop_data = np.zeros((num_date, length, width), np.float32)
-
+    #trop_data_abs = np.zeros((num_date, length, width), np.float32)
+    
     print('calcualting delay for each date using PyAPS (Jolivet et al., 2011; 2014) ...')
     print('number of grib files used: {}'.format(num_date))
     if verbose:
@@ -539,6 +572,7 @@ def get_delay_timeseries(inps, atr):
     for i in range(num_date):
         grib_file = inps.grib_file_list[i]
         trop_data[i] = get_delay(grib_file, inps)
+        #trop_data_abs[i] = get_delay_abs(grib_file, inps)
         if verbose:
             prog_bar.update(i+1, suffix=os.path.basename(grib_file))
     if verbose:
@@ -558,6 +592,11 @@ def get_delay_timeseries(inps, atr):
                       dates=date_list,
                       metadata=atr,
                       refFile=inps.timeseries_file)
+    #ts_obj.write2hdf5(data=trop_data,
+    #                  outFile = 'ERA5_abs.h5',
+    #                  dates=date_list,
+    #                  metadata=atr,
+    #                  refFile=inps.timeseries_file)
     return
 
 
