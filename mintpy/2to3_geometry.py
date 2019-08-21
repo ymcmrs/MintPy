@@ -150,6 +150,34 @@ def run_2to3_geometryGeo(py2_file, py3_file):
     write_h5(datasetDict, py3_file, metadata=atr0, ref_file=None, compression=None)
 
     return py3_file
+
+def run_2to3_geometryGeo(py2_file, py3_file):
+    """Convert geometry file from py2-MintPy format to py3-MintPy format"""
+    # read data from py2_file
+    lt_file = 'geometryGeo.h5'
+    atr0 = readfile.read_attribute(py2_file)
+    length, width = int(atr0['LENGTH']), int(atr0['WIDTH'])
+    
+    with h5py.File(py2_file, 'r') as f:
+        dem_data = np.zeros((length, width), np.float32)
+        dem_data = f['dem/dem'][:]
+
+    with h5py.File(lt_file, 'r') as f:
+        #lt_data = np.zeros((length, width), np.complex64)
+        rangeCoord = f['rangeCoord'][:]
+        azimuthCoord = f['azimuthCoord'][:]
+        range_data = (rangeCoord).astype(np.float32)
+        azimuth_data = (azimuthCoord).astype(np.float32)
+   
+        
+    datasetDict = dict()
+    datasetDict['height'] = np.asarray(dem_data,dtype='float32')
+    datasetDict['rangeCoord'] = range_data
+    datasetDict['azimuthCoord'] = azimuth_data
+
+    write_h5(datasetDict, py3_file, metadata=atr0, ref_file=None, compression=None)
+
+    return py3_file
 ################################################################################
 def main(iargs=None):
     inps = cmd_line_parse(iargs)
