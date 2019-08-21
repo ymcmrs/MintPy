@@ -164,8 +164,8 @@ def run_2to3_geometryGeo(py2_file, py3_file):
 
     with h5py.File(lt_file, 'r') as f:
         #lt_data = np.zeros((length, width), np.complex64)
-        rangeCoord = f['rangeCoord'][:]
-        azimuthCoord = f['azimuthCoord'][:]
+        rangeCoord = f['/geometry/rangeCoord'][:]
+        azimuthCoord = f['/geometry/azimuthCoord'][:]
         range_data = (rangeCoord).astype(np.float32)
         azimuth_data = (azimuthCoord).astype(np.float32)
    
