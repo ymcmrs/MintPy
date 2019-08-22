@@ -913,10 +913,11 @@ def ifgram_inversion_patch(ifgram_file, box=None, ref_phase=None, unwDatasetName
                                 num_pixel2inv/num_pixel*100))
     if num_pixel2inv < 1:
         ts = ts.reshape(num_date, num_row, num_col)
+        ifgram_diff = ifgram_diff.reshape(num_ifg, num_row, num_col)
         ts_std = ts_std.reshape(num_date, num_row, num_col)
         temp_coh = temp_coh.reshape(num_row, num_col)
         num_inv_ifg = num_inv_ifg.reshape(num_row, num_col)
-        return ts, temp_coh, ts_std, num_inv_ifg
+        return ts, temp_coh, ts_std, num_inv_ifg, ifgram_diff
 
     # Inversion - SBAS
     if weight_func in ['no', 'sbas']:
