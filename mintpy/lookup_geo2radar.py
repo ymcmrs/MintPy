@@ -263,7 +263,13 @@ def main(argv):
         points0[:,1] = yy0
         
         #print(split_grid_x[i].shape)
-        
+        if len(zz10) < 1:
+            zz10 = zz1[0:100]
+            zz20 = zz2[0:100]
+            points0 = np.zeros((100,2))
+            points0[:,0] = xx[0:100]
+            points0[:,1] = yy[0:100]
+            
         data0 = (points0, zz10, zz20, split_grid_x[i],split_grid_y[i])
         data_parallel.append(data0)
     
