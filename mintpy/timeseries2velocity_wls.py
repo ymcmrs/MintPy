@@ -2,10 +2,13 @@
 ############################################################
 # Program is part of MintPy                                #
 # Copyright(c) 2013-2019, Heresh Fattahi, Zhang Yunjun     #
-# Author:  Yunmeng Cao .                                   #
+# Author:  Heresh Fattahi, Zhang Yunjun                    #
 ############################################################
 # Modified from timeseries2velocity.py written by Yunjun Zhang & Heresh Fattahi
 # July 15, 2019 
+
+# Modified Sep. 13, 2019, support weighted-least-squares (WlS) and parallel processing
+# By Yunmeng Cao
 
 import sys
 import os
@@ -404,85 +407,6 @@ def estimate_linear_velocity_wls(inps):
     return inps.outfile
 
 
-def estimate_linear_velocity_wls_parallel(inps):
-    # read time-series data
-    print('reading data from file {} ...'.format(inps.timeseries_file))
-    ts_data, atr = readfile.read(inps.timeseries_file)
-    ts_vari, atr0 = readfile.read(inps.timeseries_variance)
-    ts_data = ts_data[inps.dropDate, :, :].reshape(inps.numDate, -1)
-    ts_vari = ts_vari[inps.dropDate, :, :].reshape(inps.numDate, -1)  
-    
-    if atr['UNIT'] == 'mm':
-        ts_data *= 1./1000.
-    length, width = int(atr['LENGTH']), int(atr['WIDTH'])
-    A = timeseries.get_design_matrix4average_velocity(inps.dateList)
-    
-    
-    
-    
-    
-    vel = np.zeros((length,width))
-    vel = vel.flatten()
-    rr0, cc0 = ts_vari.shape
-    for i in range(cc0):
-        print_progress(i+1, cc0, prefix='point: ', suffix=str(i+1))
-        AA0 = np.dot(np.transpose(A),inv(np.diag(ts_vari[:,i])))
-        AA1 = np.dot(AA0,A)
-        yy0 = np.dot(AA0,ts_data[:,i])
-        X = np.dot(np.linalg.pinv(AA1), yy0)
-        vel[i] = X[0]
-    
-    vel = vel.reshape(length, width)
-    # prepare attributes
-    atr['FILE_TYPE'] = 'velocity'
-    atr['UNIT'] = 'm/year'
-    atr['START_DATE'] = inps.dateList[0]
-    atr['END_DATE'] = inps.dateList[-1]
-    atr['DATE12'] = '{}_{}'.format(inps.dateList[0], inps.dateList[-1])
-    # config parameter
-    print('add/update the following configuration metadata:\n{}'.format(configKeys))
-    for key in configKeys:
-        atr[key_prefix+key] = str(vars(inps)[key])
-
-    # write to HDF5 file
-    dsDict = dict()
-    dsDict['velocity'] = vel
-    #dsDict['velocityStd'] = vel_std
-    writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
-    return inps.outfile
-
-
-def print_progress(iteration, total, prefix='calculating:', suffix='complete', decimals=1, barLength=50, elapsed_time=None):
-    """Print iterations progress - Greenstick from Stack Overflow
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : number of decimals in percent complete (Int) 
-        barLength   - Optional  : character length of bar (Int) 
-        elapsed_time- Optional  : elapsed time in seconds (Int/Float)
-    
-    Reference: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-    """
-    filledLength    = int(round(barLength * iteration / float(total)))
-    percents        = round(100.00 * (iteration / float(total)), decimals)
-    bar             = '#' * filledLength + '-' * (barLength - filledLength)
-    if elapsed_time:
-        sys.stdout.write('%s [%s] %s%s    %s    %s secs\r' % (prefix, bar, percents, '%', suffix, int(elapsed_time)))
-    else:
-        sys.stdout.write('%s [%s] %s%s    %s\r' % (prefix, bar, percents, '%', suffix))
-    sys.stdout.flush()
-    if iteration == total:
-        print("\n")
-
-    '''
-    Sample Useage:
-    for i in range(len(dateList)):
-        print_progress(i+1,len(dateList))
-    '''
-    return
 ############################################################################
 def main(iargs=None):
     inps = cmd_line_parse(iargs)
