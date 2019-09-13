@@ -372,7 +372,7 @@ def estimate_linear_velocity_wls(inps):
     for i in range(split_numb):
         id0 = idx_list[i]
         gg = future[i]
-        zz[id0] = gg[0]
+        zz[id0] = gg
         
     vel_all = zz.reshape(length,width)
     
