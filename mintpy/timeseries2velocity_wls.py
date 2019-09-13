@@ -15,6 +15,9 @@ from mintpy.objects import timeseries, giantTimeseries, HDFEOS
 from mintpy.utils import readfile, writefile, ptime, utils as ut
 from numpy.linalg import inv
 
+from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
 dataType = np.float32
 # key configuration parameter name
 key_prefix = 'mintpy.velocity.'
