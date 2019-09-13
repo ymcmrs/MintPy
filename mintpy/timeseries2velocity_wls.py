@@ -355,7 +355,7 @@ def estimate_linear_velocity_wls(inps):
     length, width = int(atr['LENGTH']), int(atr['WIDTH'])
     A = timeseries.get_design_matrix4average_velocity(inps.dateList)
     
-    split_numb = 1000
+    split_numb = 2000
     idx_list = split_list(int(length*width),split_numb = split_numb)
     
     data_parallel = []
