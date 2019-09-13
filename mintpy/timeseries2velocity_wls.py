@@ -353,7 +353,7 @@ def estimate_linear_velocity_wls(inps):
     A = timeseries.get_design_matrix4average_velocity(inps.dateList)
     
     split_numb = 1000
-    idx_list = split_lat_lon_kriging(int(length*width),split_numb = split_numb)
+    idx_list = split_list(int(length*width),split_numb = split_numb)
     
     data_parallel = []
     for i in range(split_numb):
