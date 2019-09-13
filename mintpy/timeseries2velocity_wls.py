@@ -360,7 +360,7 @@ def estimate_linear_velocity_wls(inps):
         data0 = (A,ts_data[:,idx_list[i]],ts_vari[:,idx_list[i]])
         data_parallel.append(data0)
     
-    future = parallel_process(data_parallel, velocity_wls, n_jobs=inps.parallel, use_kwargs=False)
+    future = parallel_process(data_parallel, velocity_wls, n_jobs=inps.parallelNumb, use_kwargs=False)
     
     zz = np.zeros((length*width,),dtype = np.float32)
     for i in range(split_numb):
