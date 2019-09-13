@@ -68,6 +68,7 @@ def create_parser():
                              '--exclude exclude_date.txt\n'+DROP_DATE_TXT)
     parser.add_argument('--template', '-t', dest='template_file',
                         help='template file with the following items:'+TEMPLATE)
+    parser.add_argument('--parallel', dest='parallelNumb', type=int, default=1, help='Enable parallel processing and Specify the number of processors.')
     parser.add_argument('-o', '--output', dest='outfile',
                         help='output file name')
     parser.add_argument('--update', dest='update_mode', action='store_true',
@@ -262,6 +263,82 @@ def estimate_linear_velocity(inps):
     writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
     return inps.outfile
 
+def split_list(nn, split_numb=4):
+
+    dn = round(nn/int(split_numb))
+    
+    idx = []
+    for i in range(split_numb):
+        a0 = i*dn
+        b0 = (i+1)*dn
+        
+        if i == (split_numb - 1):
+            b0 = nn
+        
+        if not a0 > b0:
+            idx0 = np.arange(a0,b0)
+            #print(idx0)
+            idx.append(idx0)
+            
+    return idx
+
+def parallel_process(array, function, n_jobs=16, use_kwargs=False):
+    """
+        A parallel version of the map function with a progress bar. 
+
+        Args:
+            array (array-like): An array to iterate over.
+            function (function): A python function to apply to the elements of array
+            n_jobs (int, default=16): The number of cores to use
+            use_kwargs (boolean, default=False): Whether to consider the elements of array as dictionaries of 
+                keyword arguments to function 
+        Returns:
+            [function(array[0]), function(array[1]), ...]
+    """
+    #We run the first few iterations serially to catch bugs
+    #If we set n_jobs to 1, just run a list comprehension. This is useful for benchmarking and debugging.
+    if n_jobs==1:
+        return [function(**a) if use_kwargs else function(a) for a in tqdm(array[:])]
+    #Assemble the workers
+    with ProcessPoolExecutor(max_workers=n_jobs) as pool:
+        #Pass the elements of array into function
+        if use_kwargs:
+            futures = [pool.submit(function, **a) for a in array[:]]
+        else:
+            futures = [pool.submit(function, a) for a in array[:]]
+        kwargs = {
+            'total': len(futures),
+            'unit': 'it',
+            'unit_scale': True,
+            'leave': True
+        }
+        #Print out the progress as tasks complete
+        for f in tqdm(as_completed(futures), **kwargs):
+            pass
+    out = []
+    #Get the results from the futures. 
+    for i, future in tqdm(enumerate(futures)):
+        try:
+            out.append(future.result())
+        except Exception as e:
+            out.append(e)
+    return out    
+
+
+
+def velocity_wls(data0):
+    A, ts_data, ts_vari = data0
+    ts_vari[ts_vari==0]=1 # consider the zero nugget situtation
+    rr0, cc0 = ts_vari.shape    
+    vel = np.zeros((cc0,),dtype = np.float32)
+    for i in range(cc0):
+        AA0 = np.dot(np.transpose(A),inv(np.diag(ts_vari[:,i])))
+        AA1 = np.dot(AA0,A)
+        yy0 = np.dot(AA0,ts_data[:,i])
+        X = np.dot(np.linalg.pinv(AA1), yy0)
+        vel[i] = X[0]    
+    return vel
+
 def estimate_linear_velocity_wls(inps):
     # read time-series data
     print('reading data from file {} ...'.format(inps.timeseries_file))
@@ -274,6 +351,72 @@ def estimate_linear_velocity_wls(inps):
         ts_data *= 1./1000.
     length, width = int(atr['LENGTH']), int(atr['WIDTH'])
     A = timeseries.get_design_matrix4average_velocity(inps.dateList)
+    
+    split_numb = 1000
+    idx_list = split_lat_lon_kriging(int(length*width),split_numb = split_numb)
+    
+    data_parallel = []
+    for i in range(split_numb):
+        data0 = (A,ts_data[:,idx_list[i]],ts_vari[:,idx_list[i]])
+        data_parallel.append(data0)
+    
+    future = parallel_process(data_parallel, velocity_wls, n_jobs=inps.parallel, use_kwargs=False)
+    
+    zz = np.zeros((length*width,),dtype = np.float32)
+    for i in range(split_numb):
+        id0 = idx_list[i]
+        gg = future[i]
+        zz[id0] = gg[0]
+        
+    vel_all = zz.reshape(length,width)
+    
+    #vel = np.zeros((length,width))
+    #vel = vel.flatten()
+    #rr0, cc0 = ts_vari.shape
+    #for i in range(cc0):
+    #    print_progress(i+1, cc0, prefix='point: ', suffix=str(i+1))
+    #    AA0 = np.dot(np.transpose(A),inv(np.diag(ts_vari[:,i])))
+    #    AA1 = np.dot(AA0,A)
+    #    yy0 = np.dot(AA0,ts_data[:,i])
+    #    X = np.dot(np.linalg.pinv(AA1), yy0)
+    #    vel[i] = X[0]
+    
+    #vel = vel.reshape(length, width)
+    # prepare attributes
+    atr['FILE_TYPE'] = 'velocity'
+    atr['UNIT'] = 'm/year'
+    atr['START_DATE'] = inps.dateList[0]
+    atr['END_DATE'] = inps.dateList[-1]
+    atr['DATE12'] = '{}_{}'.format(inps.dateList[0], inps.dateList[-1])
+    # config parameter
+    print('add/update the following configuration metadata:\n{}'.format(configKeys))
+    for key in configKeys:
+        atr[key_prefix+key] = str(vars(inps)[key])
+
+    # write to HDF5 file
+    dsDict = dict()
+    dsDict['velocity'] = vel_all
+    #dsDict['velocityStd'] = vel_std
+    writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
+    return inps.outfile
+
+
+def estimate_linear_velocity_wls_parallel(inps):
+    # read time-series data
+    print('reading data from file {} ...'.format(inps.timeseries_file))
+    ts_data, atr = readfile.read(inps.timeseries_file)
+    ts_vari, atr0 = readfile.read(inps.timeseries_variance)
+    ts_data = ts_data[inps.dropDate, :, :].reshape(inps.numDate, -1)
+    ts_vari = ts_vari[inps.dropDate, :, :].reshape(inps.numDate, -1)  
+    
+    if atr['UNIT'] == 'mm':
+        ts_data *= 1./1000.
+    length, width = int(atr['LENGTH']), int(atr['WIDTH'])
+    A = timeseries.get_design_matrix4average_velocity(inps.dateList)
+    
+    
+    
+    
     
     vel = np.zeros((length,width))
     vel = vel.flatten()
@@ -304,6 +447,7 @@ def estimate_linear_velocity_wls(inps):
     #dsDict['velocityStd'] = vel_std
     writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
     return inps.outfile
+
 
 def print_progress(iteration, total, prefix='calculating:', suffix='complete', decimals=1, barLength=50, elapsed_time=None):
     """Print iterations progress - Greenstick from Stack Overflow
