@@ -249,8 +249,8 @@ def extract_metadata4interferogram(fname):
     s_par_files = [file_dir+'/*'+s_date+'*'+i for i in PAR_EXT_LIST]
     
 
-    m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
-    s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
+    #m_par_files = [file_dir+'/*'+m_date+lks+i for i in PAR_EXT_LIST]
+    #s_par_files = [file_dir+'/*'+s_date+lks+i for i in PAR_EXT_LIST]
 
 
     try:
