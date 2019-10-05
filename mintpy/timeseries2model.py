@@ -31,16 +31,12 @@ configKeys = ['excludeDate']
 
 ############################################################################
 EXAMPLE = """example:
-  timeseries2velocity_wls.py  timeSeries_ECMWF_demErr.h5 variogramTsModel.h5
-  timeseries2velocity_wls.py  timeseries_ECMWF_demErr_ramp.h5  -t smallbaselineApp.cfg --update
-  timeseries2velocity_wls.py  timeseries_ECMWF_demErr_ramp.h5  -t KyushuT73F2980_2990AlosD.template
-  timeseries2velocity_wls.py  timeseries.h5  --start-date 20080201
-  timeseries2velocity_wls.py  timeseries.h5  --start-date 20080201  --end-date 20100508
-  timeseries2velocity_wls.py  timeseries.h5  --exclude-date exclude_date.txt
-
-  timeseries2velocity_wls.py  LS-PARAMS.h5
-  timeseries2velocity_wls.py  NSBAS-PARAMS.h5
-  timeseries2velocity_wls.py  TS-PARAMS.h5
+  timeseries2model.py  timeSeries_ECMWF_demErr.h5 --variance variogramTsModel.h5
+  timeseries2model.py  timeSeries_ECMWF_demErr.h5 --variance variogramTsModel.h5 --model linear
+  timeseries2model.py  timeSeries_ECMWF_demErr.h5 --model linear_season
+  timeseries2model.py  timeSeries_ECMWF_demErr.h5 --model linear_season_semiseason
+  timeseries2model.py  timeSeries_ECMWF_demErr.h5 --model linear_season_semiseason --parallel 8
+  
 """
 
 TEMPLATE = """
@@ -255,21 +251,21 @@ def def_linear(t,a0,k0):
     return a0 + k0*t
 
 
-def def_linearSeason(t,a0,k0,p0,ph0):    
+def def_linearSeason(t,a0,k0,p0,pc0):    
     #a0 = m[0]
     #k0 = m[1]
     #p0 = m[2]
     #ph0 = m[3]
-    return a0 + k0*t + p0*np.sin(2*np.pi*t + ph0)
+    return a0 + k0*t + p0*np.sin(2*np.pi*t ) + pc0*np.cos(2*np.pi*t )
 
-def def_linearSeasonSemi(t,a0,k0,p0,ph0,p01,ph01):    
+def def_linearSeasonSemi(t,a0,k0,p0,pc0,p01,pc01):    
     #a0 = m[0]
     #k0 = m[1]
     #p0 = m[2]
     #ph0 = m[3]
     #p01 = m[4]
     #ph01 = m[5]
-    return a0 + k0*t + p0*np.sin(2*np.pi*t + ph0) + p01*np.sin(np.pi*t + ph01)
+    return a0 + k0*t + p0*np.sin(2*np.pi*t ) + pc0*np.cos(2*np.pi*t ) + p01*np.sin(np.pi*t) + pc01*np.sin(np.pi*t)
 
 def model_linear(data0):
     dt_yr, ts_data, ts_vari = data0
@@ -325,13 +321,14 @@ def model_linearSeason(data0):
         p0 = k0,v0, amp0, pha0
         popt2, pcov2 = curve_fit(def_linearSeason, dt_yr, ts_data0, p0, sigma=ts_vari0, absolute_sigma=False)
         vel[i] = popt2[1]
-        amp[i] = popt2[2]
-        pha[i] = popt2[3]
+        amp[i] = np.sqrt(popt2[2]**2 + popt2[3]**2)
+        pha[i] = np.arctan((popt2[3]/popt2[2]))
+        
         vel_std[i] = np.sqrt(pcov2[1,1])
-        amp_std[i] = np.sqrt(pcov2[2,2])
-        pha_std[i] = np.sqrt(pcov2[3,3])
+        #amp_std[i] = np.sqrt(pcov2[2,2])
+        #pha_std[i] = np.sqrt(pcov2[3,3])
         #print(vel)
-    return vel, vel_std, amp, amp_std, pha, pha_std
+    return vel, vel_std, amp, pha
 
   
 def model_linearSeasonSemi(data0):
@@ -369,60 +366,18 @@ def model_linearSeasonSemi(data0):
         p0 = k0,v0, amp0, pha0, ampt0, phat0
         popt2, pcov2 = curve_fit(def_linearSeasonSemi, dt_yr, ts_data0, p0, sigma=ts_vari0, absolute_sigma=False)
         vel[i] = popt2[1]
-        amp[i] = popt2[2]
-        pha[i] = popt2[3]
-        ampt[i] = popt2[4]
-        phat[i] = popt2[5]
+        amp[i] = np.sqrt(popt2[2]**2 + popt2[3]**2)
+        pha[i] = np.arctan((popt2[3]/popt2[2]))
+        
+        ampt[i] = np.sqrt(popt2[4]**2 + popt2[5]**2)
+        phat[i] = np.arctan((popt2[5]/popt2[4]))
+        
         
         vel_std[i] = np.sqrt(pcov2[1,1])
-        amp_std[i] = np.sqrt(pcov2[2,2])
-        pha_std[i] = np.sqrt(pcov2[3,3])
-        ampt_std[i] = np.sqrt(pcov2[4,4])
-        phat_std[i] = np.sqrt(pcov2[5,5])
         
         #print(vel)
-    return vel, vel_std, amp, amp_std, pha, pha_std, ampt, ampt_std, phat, phat_std
+    return vel, vel_std, amp, pha, ampt, phat
     
-
-def estimate_linear_velocity(inps):
-    # read time-series data
-    print('reading data from file {} ...'.format(inps.timeseries_file))
-    ts_data, atr = readfile.read(inps.timeseries_file)
-    ts_data = ts_data[inps.dropDate, :, :].reshape(inps.numDate, -1)
-    if atr['UNIT'] == 'mm':
-        ts_data *= 1./1000.
-    length, width = int(atr['LENGTH']), int(atr['WIDTH'])
-
-    # The following is equivalent
-    # X = scipy.linalg.lstsq(A, ts_data, cond=1e-15)[0]
-    # It is not used because it can not handle NaN value in ts_data
-    A = timeseries.get_design_matrix4average_velocity(inps.dateList)
-    X = np.dot(np.linalg.pinv(A), ts_data)
-    vel = np.array(X[0, :].reshape(length, width), dtype=dataType)
-
-    # velocity STD (Eq. (10), Fattahi and Amelung, 2015)
-    ts_diff = ts_data - np.dot(A, X)
-    t_diff = A[:, 0] - np.mean(A[:, 0])
-    vel_std = np.sqrt(np.sum(ts_diff ** 2, axis=0) / np.sum(t_diff ** 2)  / (inps.numDate - 2))
-    vel_std = np.array(vel_std.reshape(length, width), dtype=dataType)
-
-    # prepare attributes
-    atr['FILE_TYPE'] = 'velocity'
-    atr['UNIT'] = 'm/year'
-    atr['START_DATE'] = inps.dateList[0]
-    atr['END_DATE'] = inps.dateList[-1]
-    atr['DATE12'] = '{}_{}'.format(inps.dateList[0], inps.dateList[-1])
-    # config parameter
-    print('add/update the following configuration metadata:\n{}'.format(configKeys))
-    for key in configKeys:
-        atr[key_prefix+key] = str(vars(inps)[key])
-
-    # write to HDF5 file
-    dsDict = dict()
-    dsDict['velocity'] = vel
-    dsDict['velocityStd'] = vel_std
-    writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
-    return inps.outfile
 
 def split_list(nn, split_numb=4):
 
@@ -498,67 +453,6 @@ def velocity_wls(data0):
         vel[i] = X[0]    
     return vel
 
-def estimate_linear_velocity_wls(inps):
-    # read time-series data
-    print('reading data from file {} ...'.format(inps.timeseries_file))
-    ts_data, atr = readfile.read(inps.timeseries_file)
-    ts_vari, atr0 = readfile.read(inps.timeseries_variance)
-    ts_data = ts_data[inps.dropDate, :, :].reshape(inps.numDate, -1)
-    ts_vari = ts_vari[inps.dropDate, :, :].reshape(inps.numDate, -1)
-    
-    if atr['UNIT'] == 'mm':
-        ts_data *= 1./1000.
-    length, width = int(atr['LENGTH']), int(atr['WIDTH'])
-    A = timeseries.get_design_matrix4average_velocity(inps.dateList)
-    
-    split_numb = 2000
-    idx_list = split_list(int(length*width),split_numb = split_numb)
-    
-    data_parallel = []
-    for i in range(split_numb):
-        data0 = (A,ts_data[:,idx_list[i]],ts_vari[:,idx_list[i]])
-        data_parallel.append(data0)
-    
-    future = parallel_process(data_parallel, velocity_wls, n_jobs=inps.parallelNumb, use_kwargs=False)
-    
-    zz = np.zeros((length*width,),dtype = np.float32)
-    for i in range(split_numb):
-        id0 = idx_list[i]
-        gg = future[i]
-        zz[id0] = gg
-        
-    vel_all = zz.reshape(length,width)
-    
-    #vel = np.zeros((length,width))
-    #vel = vel.flatten()
-    #rr0, cc0 = ts_vari.shape
-    #for i in range(cc0):
-    #    print_progress(i+1, cc0, prefix='point: ', suffix=str(i+1))
-    #    AA0 = np.dot(np.transpose(A),inv(np.diag(ts_vari[:,i])))
-    #    AA1 = np.dot(AA0,A)
-    #    yy0 = np.dot(AA0,ts_data[:,i])
-    #    X = np.dot(np.linalg.pinv(AA1), yy0)
-    #    vel[i] = X[0]
-    
-    #vel = vel.reshape(length, width)
-    # prepare attributes
-    atr['FILE_TYPE'] = 'velocity'
-    atr['UNIT'] = 'm/year'
-    atr['START_DATE'] = inps.dateList[0]
-    atr['END_DATE'] = inps.dateList[-1]
-    atr['DATE12'] = '{}_{}'.format(inps.dateList[0], inps.dateList[-1])
-    # config parameter
-    print('add/update the following configuration metadata:\n{}'.format(configKeys))
-    for key in configKeys:
-        atr[key_prefix+key] = str(vars(inps)[key])
-
-    # write to HDF5 file
-    dsDict = dict()
-    dsDict['velocity'] = vel_all
-    #dsDict['velocityStd'] = vel_std
-    writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
-    return inps.outfile
-
 
 def estimate_model_para(inps):
     # read time-series data
@@ -615,39 +509,34 @@ def estimate_model_para(inps):
         for i in range(split_numb):
             id0 = idx_list[i]
             gg = future[i]
-            aa[id0] = gg[2]
-            aa_std[id0] = gg[3]
-            
-            pp[id0] = gg[4]
-            pp_std[id0] = gg[5]
+            aa[id0] = gg[2]         
+            pp[id0] = gg[3]
         
         amp_all = aa.reshape(length,width)
-        amp_std = aa_std.reshape(length,width)
-        
         pha_all = pp.reshape(length,width)
-        pha_std = pp_std.reshape(length,width)
         
     if inps.model == 'linear_season_semiseason': 
-        aat = np.zeros((length*width,),dtype = np.float32)
-        aat_std = np.zeros((length*width,),dtype = np.float32)
+        aa = np.zeros((length*width,),dtype = np.float32)
+        pp = np.zeros((length*width,),dtype = np.float32)
         
+        aat = np.zeros((length*width,),dtype = np.float32)
         ppt = np.zeros((length*width,),dtype = np.float32)
-        ppt_std = np.zeros((length*width,),dtype = np.float32)
         
         for i in range(split_numb):
             id0 = idx_list[i]
             gg = future[i]
-            aat[id0] = gg[6]
-            aa_stdt[id0] = gg[7]
+            aa[id0] = gg[2]         
+            pp[id0] = gg[3]
             
-            ppt[id0] = gg[8]
-            ppt_std[id0] = gg[9]
+            aat[id0] = gg[4] 
+            ppt[id0] = gg[5]
+        
+        amp_all = aa.reshape(length,width)
+        pha_all = pp.reshape(length,width)
         
         ampt_all = aat.reshape(length,width)
-        ampt_std = aat_std.reshape(length,width)
-        
         phat_all = ppt.reshape(length,width)
-        phat_std = ppt_std.reshape(length,width) 
+        #phat_std = ppt_std.reshape(length,width) 
     
     #vel = np.zeros((length,width))
     #vel = vel.flatten()
@@ -675,21 +564,18 @@ def estimate_model_para(inps):
     # write to HDF5 file
     dsDict = dict()
     dsDict['velocity'] = vel_all
-    dsDict['velocityStd'] = vel_std
+    dsDict['velStd'] = vel_std
     
     if inps.model =='linear_season':
-        dsDict['seasonAmp'] = amp_all
-        dsDict['seasonAmpStd'] = amp_std
-        
-        dsDict['seasonPha'] = pha_all
-        dsDict['seasonPhaStd'] = pha_std
+        dsDict['annualAmp'] = amp_all
+        dsDict['annualPha'] = pha_all
     
-    if inps.model =='linear_season_semiseason':
-        dsDict['semiseasonAmp'] = ampt_all
-        dsDict['semiseasonAmpStd'] = ampt_std
-        
-        dsDict['semiseasonPha'] = phat_all
-        dsDict['semiseasonPhaStd'] = phat_std   
+    if inps.model =='linear_season_semiseason':    
+        dsDict['annualAmp'] = amp_all        
+        dsDict['annualPha'] = pha_all
+        dsDict['semiAmp'] = ampt_all
+        dsDict['semiPha'] = phat_all
+        #dsDict['semiseaPhaStd'] = phat_std   
         
     writefile.write(dsDict, out_file=inps.outfile, metadata=atr)
     return inps.outfile
