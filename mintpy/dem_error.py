@@ -284,6 +284,7 @@ def estimate_dem_error(ts0, A0, tbase, drop_date=None, phaseVelocity=False, num_
     # X = [delta_z, constC, vel, acc, deltaAcc, ..., step1, step2, ...]
     # equivalent to X = np.dot(np.dot(np.linalg.inv(np.dot(A.T, A)), A.T), ts)
     #               X = np.dot(np.linalg.pinv(A), ts)
+    ts = np.nan_to_num(ts)
     X = linalg.lstsq(A, ts, cond=1e-15)[0]
 
     # Prepare Outputs
