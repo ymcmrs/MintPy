@@ -66,6 +66,8 @@ def create_parser():
                         help='Epoch/slice number to display.')
     parser.add_argument('--error', dest='error_file',
                         help='txt file with error for each date.')
+    parser.add_argument('--velocity', dest='velocity',
+                        help='using velocity as the initial iamge.')
 
     parser.add_argument('--start-date', dest='start_date', type=str, help='start date of displacement to display')
     parser.add_argument('--end-date', dest='end_date', type=str, help='end date of displacement to display')
@@ -541,6 +543,11 @@ class timeseriesViewer():
         # Figure 1 - Axes 1 - Displacement Map
         self.ax_img = self.fig_img.add_axes([0.125, 0.25, 0.75, 0.65])
         img_data = np.array(self.ts_data[0][self.init_idx, :, :])
+        
+        if self.velocity:
+            img_data, attr00 = readfile.read(self.velocity, datasetName='velocity')
+            img_data = img_data*100
+            
         img_data[self.mask == 0] = np.nan
         self.plot_init_image(img_data)
 
@@ -576,7 +583,7 @@ class timeseriesViewer():
         # Title and Axis Label
         disp_date = self.dates[self.init_idx].strftime('%Y-%m-%d')
         self.fig_title = 'N = {}, Time = {}'.format(self.init_idx, disp_date)
-
+        
         # Initial Pixel
         if self.yx and self.yx != self.ref_yx:
             self.pts_yx = np.array(self.yx).reshape(-1, 2)
@@ -584,7 +591,7 @@ class timeseriesViewer():
                 self.pts_lalo = np.array(self.lalo).reshape(-1, 2)
             else:
                 self.pts_lalo = None
-
+    
         # call view.py to plot
         self.img, self.cbar_img = view.plot_slice(self.ax_img, img_data, self.atr, self)[2:4]
         return self.img, self.cbar_img
